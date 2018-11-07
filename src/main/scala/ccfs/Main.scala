@@ -1,7 +1,7 @@
 package ccfs
 
+import com.typesafe.config.ConfigFactory
 import redis.clients.jedis.{Jedis, JedisPool, JedisPoolConfig}
-import com.typesafe.config
 
 object Main {
 
@@ -16,7 +16,7 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-
+    withJedis(jedisPool)(connect)
   }
 
 }

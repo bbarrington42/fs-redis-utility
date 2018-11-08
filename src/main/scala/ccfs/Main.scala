@@ -24,7 +24,7 @@ object Main {
 
   // Generalize operations requiring a scan of all keys matching a pattern followed by a transformation of the result.
   // The result must be a Monoid.
-  def scan[T](jedis: Jedis, keyPattern: String, xform: (ScanResult[String], Jedis) => T)(implicit m: Monoid[T]): T = {
+  def scan2[T](jedis: Jedis, keyPattern: String, xform: (ScanResult[String], Jedis) => T)(implicit m: Monoid[T]): T = {
     val params = new ScanParams
     params.`match`(keyPattern)
 
@@ -39,12 +39,26 @@ object Main {
     _scan(jedis.scan(ScanParams.SCAN_POINTER_START, params), m.zero)
   }
 
+  def scan(jedis: Jedis, pattern: String): List[List[String]] = {
+    val params = new ScanParams
+    params.`match`(pattern)
+
+    @tailrec
+    def loop(result: ScanResult[String], acc: List[List[String]]): List[List[String]] = {
+      val nextCursor = result.getStringCursor
+      if (ScanParams.SCAN_POINTER_START == nextCursor) result.getResult.asScala.toList :: acc else
+        loop(jedis.scan(nextCursor, params), result.getResult.asScala.toList :: acc)
+    }
+
+    loop(jedis.scan(ScanParams.SCAN_POINTER_START, params), Nil)
+  }
+
   def collect(result: ScanResult[String], jedis: Jedis): List[String] = {
     result.getResult.asScala.toList
   }
 
-  def list(jedis: Jedis): List[String] = {
-    scan(jedis, DISPENSER_KEY_PREFIX, collect)
+  def list(jedis: Jedis): List[List[String]] = {
+    scan(jedis, DISPENSER_KEY_PREFIX)
   }
 
   def main(args: Array[String]): Unit = {

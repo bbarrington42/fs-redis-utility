@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 
 object Main {
 
-  val DISPENSER_KEY_PREFIX = "dispenser:"
+  val DISPENSER_KEY_PREFIX = "dispenser:*"
 
   val config = ConfigFactory.load().getConfig("redis")
   val poolConfig = new JedisPoolConfig
@@ -29,7 +29,9 @@ object Main {
     withJedis(jedisPool)(jedis => {
       val listing = list(jedis)
 
-      println(listing)
+      val s = listing.mkString(",\n")
+
+      println(s)
     })
   }
 

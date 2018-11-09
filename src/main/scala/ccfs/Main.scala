@@ -1,14 +1,12 @@
 package ccfs
 
-import ccfs.util.ScanResultIterator
+import ccfs.RedisOps._
 import com.typesafe.config.ConfigFactory
 import redis.clients.jedis._
 
-import scala.collection.JavaConverters._
-
 object Main {
 
-  val DISPENSER_KEY_PREFIX = "dispenser:*"
+  val DISPENSER_KEY_PATTERN = "dispenser:*"
 
   val config = ConfigFactory.load().getConfig("redis")
   val poolConfig = new JedisPoolConfig
@@ -19,19 +17,13 @@ object Main {
     config.getInt("port"))
 
 
-  def list(jedis: Jedis, pattern: String = DISPENSER_KEY_PREFIX): List[List[String]] = {
-    val iter = ScanResultIterator(jedis, pattern)
-
-    iter.foldLeft(List.empty[List[String]])((acc, res) => res.getResult.asScala.toList :: acc)
-  }
-
   def main(args: Array[String]): Unit = {
     withJedis(jedisPool)(jedis => {
-      val listing = list(jedis)
+      val keys = getKeys(jedis)
 
-      val s = listing.mkString(",\n")
+      val map = zplMap(jedis, keys)
 
-      println(s)
+      println(map)
     })
   }
 

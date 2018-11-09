@@ -3,6 +3,7 @@ package ccfs
 import ccfs.RedisOps._
 import com.typesafe.config.ConfigFactory
 import redis.clients.jedis._
+import scalaz.std.AllInstances._
 
 object Main {
 
@@ -19,9 +20,8 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     withJedis(jedisPool)(jedis => {
-      val keys = getKeys(jedis)
 
-      val map = zplMap(jedis, keys)
+      val map = zplMap(jedis)
 
       println(map)
     })

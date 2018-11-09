@@ -3,7 +3,7 @@ package ccfs
 import ccfs.Main.DISPENSER_KEY_PATTERN
 import ccfs.util.ScanResultIterator
 import redis.clients.jedis.Jedis
-import scalaz.Monoid
+import scalaz.{Foldable, Monoid}
 import scalaz.std.AllInstances._
 
 import scala.collection.JavaConverters._
@@ -32,18 +32,13 @@ object RedisOps {
   private def getHash(jedis: Jedis, hashKey: String): Hash =
     Map[String, String](jedis.hgetAll(hashKey).asScala.toSeq: _*)
 
-  private def hashToMap(hash: Hash, mapKey: String): Option[KeyedMap] =
-    hash.get(mapKey).map(v => Map(v -> hash))
+  private def toMapEntry(hash: Hash, entryKey: String): KeyedMap =
+    hash.get(entryKey).map(v => Map(v -> hash)).getOrElse(Map.empty)
 
-  private def keyToMap(jedis: Jedis, mapKey: String)(hashKey: String): Option[KeyedMap] =
-    hashToMap(getHash(jedis, hashKey), mapKey)
+  private def keyToMap(jedis: Jedis, mapKey: String)(hashKey: String): KeyedMap =
+    toMapEntry(getHash(jedis, hashKey), mapKey)
 
-  private def foldMap[T](jedis: Jedis, keys: List[String], f: String => Option[T])(implicit monoid: Monoid[T]): T =
-    keys.foldLeft(monoid.zero)((acc, key) =>
-      f(key).map(m => monoid.append(m, acc)).getOrElse(acc))
-
-  // Given a list of keys, build a reverse Map keyed by serial number
-  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): KeyedMap =
-    foldMap(jedis, keys, keyToMap(jedis, mapKey))
+  private def keysToMap[F[_]](jedis: Jedis, mapKey: String, keys: F[String])(implicit foldable: Foldable[F]): KeyedMap =
+    foldable.foldMap[String, KeyedMap](keys)(keyToMap(jedis, mapKey))
 
 }

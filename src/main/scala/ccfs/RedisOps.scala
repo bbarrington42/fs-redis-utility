@@ -14,7 +14,7 @@ object RedisOps {
   type Hash = Map[String, String]
   type KeyedMap = Map[String, Hash]
 
-  // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispener:'
+  // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
   def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] = {
     val iter = ScanResultIterator(jedis, pattern)
 
@@ -29,14 +29,14 @@ object RedisOps {
   }
 
   // Retrieve a hash entry given a key
-  def getHash(jedis: Jedis, key: String): Hash =
-    Map[String, String](jedis.hgetAll(key).asScala.toSeq: _*)
+  private def getHash(jedis: Jedis, hashKey: String): Hash =
+    Map[String, String](jedis.hgetAll(hashKey).asScala.toSeq: _*)
 
-  private def hashToMap(hash: Hash, key: String): Option[KeyedMap] =
-    hash.get(key).map(v => Map(v -> hash))
+  private def hashToMap(hash: Hash, mapKey: String): Option[KeyedMap] =
+    hash.get(mapKey).map(v => Map(v -> hash))
 
-  private def keyToMap(jedis: Jedis, mapKey: String)(key: String): Option[KeyedMap] =
-    hashToMap(getHash(jedis, key), mapKey)
+  private def keyToMap(jedis: Jedis, mapKey: String)(hashKey: String): Option[KeyedMap] =
+    hashToMap(getHash(jedis, hashKey), mapKey)
 
   private def foldMap[T](jedis: Jedis, keys: List[String], f: String => Option[T])(implicit monoid: Monoid[T]): T =
     keys.foldLeft(monoid.zero)((acc, key) =>

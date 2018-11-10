@@ -38,7 +38,6 @@ object RedisOps {
   private def keyToMap(jedis: Jedis, mapKey: String)(hashKey: String): KeyedMap =
     toMapEntry(getHash(jedis, hashKey), mapKey)
 
-  private def keysToMap[F[_]](jedis: Jedis, mapKey: String, keys: F[String])(implicit foldable: Foldable[F]): KeyedMap =
-    foldable.foldMap[String, KeyedMap](keys)(keyToMap(jedis, mapKey))
-
+  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): KeyedMap =
+    Foldable[List].foldMap(keys)(keyToMap(jedis, mapKey))
 }

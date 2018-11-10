@@ -3,8 +3,9 @@ package ccfs
 import ccfs.Main.DISPENSER_KEY_PATTERN
 import ccfs.util.ScanResultIterator
 import redis.clients.jedis.Jedis
-import scalaz.{Foldable, Monoid}
-import scalaz.std.AllInstances._
+import scalaz.std.list._
+import scalaz.std.option._
+import scalaz.{Monoid, Traverse}
 
 import scala.collection.JavaConverters._
 
@@ -32,12 +33,12 @@ object RedisOps {
   private def getHash(jedis: Jedis, hashKey: String): Hash =
     Map[String, String](jedis.hgetAll(hashKey).asScala.toSeq: _*)
 
-  private def toMapEntry(hash: Hash, entryKey: String): KeyedMap =
-    hash.get(entryKey).map(v => Map(v -> hash)).getOrElse(Map.empty)
+  private def toMapEntry(hash: Hash, entryKey: String): Option[(String, Hash)] =
+    hash.get(entryKey).map(v => v -> hash)
 
-  private def keyToMap(jedis: Jedis, mapKey: String)(hashKey: String): KeyedMap =
-    toMapEntry(getHash(jedis, hashKey), mapKey)
+  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): KeyedMap = {
+    val entries = keys.map(key => toMapEntry(getHash(jedis, key), mapKey))
+    Traverse[List].sequence(entries).map(_.toMap).getOrElse(Map.empty)
+  }
 
-  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): KeyedMap =
-    Foldable[List].foldMap(keys)(keyToMap(jedis, mapKey))
 }

@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 object RedisOps {
 
   type Hash = Map[String, String]
-  type KeyedMap = Map[String, Hash]
+  type ZPLMap = Map[String, Hash]  // Dispenser properties keyed by serial number
 
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
   def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] = {
@@ -22,11 +22,14 @@ object RedisOps {
     iter.foldLeft(List.empty[String])((acc, res) => res.getResult.asScala.toList ++ acc)
   }
 
-  def zplMap(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[KeyedMap]): KeyedMap = {
+  def zplMap(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[ZPLMap]): ZPLMap = {
     val iter = ScanResultIterator(jedis, pattern)
 
-    iter.foldLeft(monoid.zero)((acc, res) =>
-      monoid.append(keysToMap(jedis, "zpl", res.getResult.asScala.toList), acc))
+    iter.foldLeft(monoid.zero)((acc, res) => {
+      // todo For testing
+      val l = res.getResult.asScala.toList
+      println(s"Retrieved ${l.length} entries")
+      monoid.append(keysToMap(jedis, "zpl", l), acc)})
   }
 
   // Retrieve a hash entry given a key
@@ -36,7 +39,7 @@ object RedisOps {
   private def toMapEntry(hash: Hash, entryKey: String): Option[(String, Hash)] =
     hash.get(entryKey).map(v => v -> hash)
 
-  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): KeyedMap = {
+  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): ZPLMap = {
     val entries = keys.map(key => toMapEntry(getHash(jedis, key), mapKey))
     Traverse[List].sequence(entries).map(_.toMap).getOrElse(Map.empty)
   }

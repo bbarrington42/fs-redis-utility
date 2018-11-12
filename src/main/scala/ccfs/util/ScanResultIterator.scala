@@ -6,6 +6,7 @@ import redis.clients.jedis.{Jedis, ScanParams, ScanResult}
 class ScanResultIterator(jedis: Jedis, pattern: String) extends Iterator[Result] {
   val params = new ScanParams
   params.`match`(pattern)
+  params.count(5000)
 
   private var result: Result = jedis.scan(ScanParams.SCAN_POINTER_START, params)
 

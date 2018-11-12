@@ -32,16 +32,18 @@ object RedisOps {
       monoid.append(keysToMap(jedis, "zpl", l), acc)})
   }
 
-  // Retrieve a hash entry given a key
-  private def getHash(jedis: Jedis, hashKey: String): Hash =
-    Map[String, String](jedis.hgetAll(hashKey).asScala.toSeq: _*)
-
-  private def toMapEntry(hash: Hash, entryKey: String): Option[(String, Hash)] =
-    hash.get(entryKey).map(v => v -> hash)
-
-  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): ZPLMap = {
-    val entries = keys.map(key => toMapEntry(getHash(jedis, key), mapKey))
-    Traverse[List].sequence(entries).map(_.toMap).getOrElse(Map.empty)
+  // Get all hashes for the given keys using a pipeline
+  private def getHashes(jedis: Jedis, hashKeys: List[String]): List[Hash] = {
+    val pipeline = jedis.pipelined()
+    val responses = hashKeys.map(key => pipeline.hgetAll(key))
+    pipeline.sync()
+    responses.map(response => Map[String, String](response.get().asScala.toSeq: _*))
   }
 
+  private def toMapEntries(hashes: List[Hash], key: String): List[(String, Hash)] =
+    hashes.foldLeft(List.empty[(String, Hash)])((acc, hash) =>
+      hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
+
+  private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): ZPLMap =
+    toMapEntries(getHashes(jedis, keys), mapKey).toMap
 }

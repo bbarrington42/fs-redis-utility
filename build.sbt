@@ -31,5 +31,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-json" % "2.6.10",
   "com.typesafe" % "config" % "1.3.3",
   "redis.clients" % "jedis" % "2.9.0",
-  "org.scalaz" %% "scalaz-core" % "7.2.26"
+  "org.scalaz" %% "scalaz-core" % "7.2.26",
+  "org.scalacheck" %% "scalacheck" % "1.14.0" % Test
 )

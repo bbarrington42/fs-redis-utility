@@ -8,6 +8,7 @@ import scalaz.std.option._
 import scalaz.{Monoid, Traverse}
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.SortedMap
 
 
 object RedisOps {
@@ -45,5 +46,5 @@ object RedisOps {
       hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
 
   private def keysToMap(jedis: Jedis, mapKey: String, keys: List[String]): ZPLMap =
-    toMapEntries(getHashes(jedis, keys), mapKey).toMap
+    SortedMap[String, Hash](toMapEntries(getHashes(jedis, keys), mapKey): _*)
 }

@@ -23,7 +23,10 @@ object Main {
 
       val map = zplMap(jedis)
 
-      println(map)
+      val r = map.filterKeys(key => key.startsWith("ZPL"))
+
+      println(s"${r.size} entries")
+
     })
   }
 

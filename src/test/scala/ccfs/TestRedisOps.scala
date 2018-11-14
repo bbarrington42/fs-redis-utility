@@ -60,12 +60,14 @@ object TestRedisOps extends Properties("RedisOps") {
     sequence(withPrefixes(prefixes, len))
 
 
-  property("valid hashes should convert properly to map entries") = Prop.forAll(hashes(20))(hashes => {
+  property("valid hashes should convert properly to map entries") =
+    Prop.forAll(hashes(20))(hashes => {
     val entries = toMapEntries(hashes, "zpl")
     entries.length == hashes.length
   })
 
-  property("hash entries should be sorted by keys") = Prop.forAll(hashes(20))(hashes => {
+  property("hash entries should be sorted by keys") =
+    Prop.forAll(hashes(20))(hashes => {
     val map = toMap(hashes, "zpl")
     val keys = map.keySet.toList
     keys == map.keys.toList.sorted

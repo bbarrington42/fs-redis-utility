@@ -24,18 +24,13 @@ object RedisOps {
   def zplMap(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[ZPLMap]): ZPLMap = {
     val iter = ScanResultIterator(jedis, pattern)
 
-    iter.foldLeft(monoid.zero)((acc, res) => {
-      // todo For testing
-      val keys = res.getResult.asScala.toList
-      println(s"Retrieved ${keys.length} entries")
-      monoid.append(toMap(getHashes(jedis, keys), "zpl"), acc)
-    })
+    iter.foldLeft(monoid.zero)((acc, res) =>
+      monoid.append(toMap(getHashes(jedis, res.getResult.asScala.toList), "zpl"), acc))
   }
 
-  def matches(map: ZPLMap, keyPrefix: String): ZPLMap = {
-    //println(s"map: $map, prefix: $keyPrefix")
+  // Return a subset of entries matching the serial number prefix
+  def matches(map: ZPLMap, keyPrefix: String): ZPLMap =
     map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) }
-  }
 
   // Get all hashes for the given keys using a pipeline
   private def getHashes(jedis: Jedis, hashKeys: List[String]): List[Hash] = {

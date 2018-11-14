@@ -42,16 +42,20 @@ object TestRedisOps extends Properties("RedisOps") {
 
   def hashes(maxLen: Int): Gen[List[Hash]] = Gen.oneOf(zplPrefixes).flatMap(p => hashes(p, maxLen))
 
-
+  // Obtain a ZPLMap Generator that generates entries with the given prefix with length given by the passed Generator
+  // Return a tuple of those values
   private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[ZPLMap]) =
     prefix -> len.flatMap(n => Gen.listOfN(n, hash(prefix))).map(hashes => toMap(hashes, "zpl"))
 
+  // A list of the above
   private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[ZPLMap])] =
     prefixes.map(p => withPrefix(p, len))
 
+  // Pull the Gen out from the ZPLMap having it apply to the containing List instead
   private def sequence(tuples: List[(String, Gen[ZPLMap])]): Gen[List[(String, ZPLMap)]] =
     Traverse[List].sequence(tuples.map { case (p, g) => g.flatMap(map => Gen.const(p -> map)) })
 
+  // Finally, combine methods above to give us a Generator for testing
   def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, ZPLMap)]] =
     sequence(withPrefixes(prefixes, len))
 
@@ -70,11 +74,11 @@ object TestRedisOps extends Properties("RedisOps") {
   property("matches should return the correct number of results") =
     Prop.forAll(genTuples(zplPrefixes, Gen.choose(1, 30)))(tuples => {
       // Combine all the maps into one
-      val theMap = tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2 ++ acc)
+      val map = tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2 ++ acc)
 
-      // Collect our test criteria. Namely, prefix and how many instances should be found with each
+      // Collect our test criteria. Namely, the prefix and how many instances should be found with each
       val crit = tuples.map { case (p, m) => p -> m.size }
 
-      crit.forall { case (p, n) => matches(theMap, p).size == n }
+      crit.forall { case (p, n) => matches(map, p).size == n }
     })
 }

@@ -22,8 +22,7 @@ object Main {
     withJedis(jedisPool)(jedis => {
 
       val map = zplMap(jedis)
-
-      val r = map.filterKeys(key => key.startsWith("ZPL"))
+      val r = matches(map, "ZPL8")
 
       println(s"${r.size} entries")
 

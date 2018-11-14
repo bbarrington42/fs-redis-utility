@@ -28,12 +28,14 @@ object RedisOps {
       // todo For testing
       val keys = res.getResult.asScala.toList
       println(s"Retrieved ${keys.length} entries")
-      monoid.append(keysToMap(getHashes(jedis, keys), "zpl"), acc)
+      monoid.append(toMap(getHashes(jedis, keys), "zpl"), acc)
     })
   }
 
-  def matches(map: ZPLMap, keyPrefix: String): ZPLMap =
+  def matches(map: ZPLMap, keyPrefix: String): ZPLMap = {
+    //println(s"map: $map, prefix: $keyPrefix")
     map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) }
+  }
 
   // Get all hashes for the given keys using a pipeline
   private def getHashes(jedis: Jedis, hashKeys: List[String]): List[Hash] = {
@@ -47,6 +49,6 @@ object RedisOps {
     hashes.foldLeft(List.empty[(String, Hash)])((acc, hash) =>
       hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
 
-  private[ccfs] def keysToMap(hashes: List[Hash], mapKey: String): ZPLMap =
+  private[ccfs] def toMap(hashes: List[Hash], mapKey: String): ZPLMap =
     SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*)
 }

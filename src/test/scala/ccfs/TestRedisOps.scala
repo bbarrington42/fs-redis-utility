@@ -2,8 +2,18 @@ package ccfs
 
 import ccfs.RedisOps.{Hash, _}
 import org.scalacheck.{Gen, Prop, Properties}
+import scalaz.std.list._
+import scalaz.{Applicative, Traverse}
+
+import scala.collection.immutable.SortedMap
 
 object TestRedisOps extends Properties("RedisOps") {
+
+  implicit val applicativeGen = new Applicative[Gen] {
+    override def point[A](a: => A): Gen[A] = Gen.const(a)
+
+    override def ap[A, B](fa: => Gen[A])(f: => Gen[A => B]): Gen[B] = f.flatMap(fa.map)
+  }
 
   val zplPrefixes: List[String] = List("ZPL", "ZSA")
 
@@ -32,10 +42,18 @@ object TestRedisOps extends Properties("RedisOps") {
 
   def hashes(maxLen: Int): Gen[List[Hash]] = Gen.oneOf(zplPrefixes).flatMap(p => hashes(p, maxLen))
 
-  private def hashesWithCounts(prefixes: List[String], max: Int): Gen[List[(Hash, Int)]] = {
-    val prefixesWithCounts = prefixes.map(p => Gen.const(p).flatMap(s => Gen.choose(1, max).map(i => s -> i)))
-    Gen.sequence(prefixesWithCounts.map(g => g.flatMap { case (p, n) => Gen.listOfN(n, hash(p).map(h => h -> n)) }))
-  }
+
+  private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[ZPLMap]) =
+    prefix -> len.flatMap(n => Gen.listOfN(n, hash(prefix))).map(hashes => toMap(hashes, "zpl"))
+
+  private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[ZPLMap])] =
+    prefixes.map(p => withPrefix(p, len))
+
+  private def sequence(tuples: List[(String, Gen[ZPLMap])]): Gen[List[(String, ZPLMap)]] =
+    Traverse[List].sequence(tuples.map { case (p, g) => g.flatMap(map => Gen.const(p -> map)) })
+
+  def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, ZPLMap)]] =
+    sequence(withPrefixes(prefixes, len))
 
 
   property("valid hashes should convert properly to map entries") = Prop.forAll(hashes(20))(hashes => {
@@ -44,13 +62,19 @@ object TestRedisOps extends Properties("RedisOps") {
   })
 
   property("hash entries should be sorted by keys") = Prop.forAll(hashes(20))(hashes => {
-    val map = keysToMap(hashes, "zpl")
+    val map = toMap(hashes, "zpl")
     val keys = map.keySet.toList
     keys == map.keys.toList.sorted
   })
 
   property("matches should return the correct number of results") =
-    Prop.forAll(prefixWithCount(zplPrefixes, 20))(tuples => {
-      val maps = tuples.map { case (pre, count) => hashes() }
+    Prop.forAll(genTuples(zplPrefixes, Gen.choose(1, 30)))(tuples => {
+      // Combine all the maps into one
+      val theMap = tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2 ++ acc)
+
+      // Collect our test criteria. Namely, prefix and how many instances should be found with each
+      val crit = tuples.map { case (p, m) => p -> m.size }
+
+      crit.forall { case (p, n) => matches(theMap, p).size == n }
     })
 }

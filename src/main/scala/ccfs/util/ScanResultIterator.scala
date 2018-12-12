@@ -6,13 +6,14 @@ import redis.clients.jedis.{Jedis, ScanParams, ScanResult}
 class ScanResultIterator(jedis: Jedis, pattern: String) extends Iterator[Result] {
   val params = new ScanParams
   params.`match`(pattern)
-  params.count(15000)
+  params.count(1/*15000*/)
 
   private var result: Result = jedis.scan(ScanParams.SCAN_POINTER_START, params)
 
   override def hasNext: Boolean = ScanParams.SCAN_POINTER_START != result.getStringCursor
 
   override def next(): Result = {
+    println(s"result: $result")
     val rv = result
     result = jedis.scan(result.getStringCursor, params)
     rv

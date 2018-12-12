@@ -44,19 +44,19 @@ object TestRedisOps extends Properties("RedisOps") {
 
   // Obtain a ZPLMap Generator that generates entries with the given prefix with length given by the passed Generator
   // Return a tuple of those values
-  private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[ZPLMap]) =
+  private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[Properties]) =
     prefix -> len.flatMap(n => Gen.listOfN(n, hash(prefix))).map(hashes => toMap(hashes, "zpl"))
 
   // A list of the above
-  private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[ZPLMap])] =
+  private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[Properties])] =
     prefixes.map(p => withPrefix(p, len))
 
   // Pull the Gen out from the ZPLMap having it apply to the containing List instead
-  private def sequence(tuples: List[(String, Gen[ZPLMap])]): Gen[List[(String, ZPLMap)]] =
+  private def sequence(tuples: List[(String, Gen[Properties])]): Gen[List[(String, Properties)]] =
     Traverse[List].sequence(tuples.map { case (p, g) => g.flatMap(map => Gen.const(p -> map)) })
 
   // Finally, combine methods above to give us a Generator for testing
-  def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, ZPLMap)]] =
+  def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, Properties)]] =
     sequence(withPrefixes(prefixes, len))
 
 

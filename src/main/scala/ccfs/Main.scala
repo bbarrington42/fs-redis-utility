@@ -22,14 +22,26 @@ object Main {
 
       val keys = getKeys(jedis)
 
-      println(s"${keys.length} entries")
+      println(s"# entries: ${keys.length}")
 
-      // ZPL302759J
-//      val map = zplMap(jedis)
-//      val r = matches(map, "ZPL3027553")
+      val map = sessionMap(jedis)
+
+      val r = matches(map, "02345678-1234-1234-1234-123456789AB1")
+
+      println(r)
+
+      //val map = zplMap(jedis)
+
+      //println(map)
+
+      //val r = matches(map, "ZPL3500371")
+//      matches(map, "ZPL3205270"),
+//      matches(map, "ZPL320554U"),
+//      matches(map, "ZPL320555P"),
+//      matches(map, "ZPL3205089"))
 //
-//      println(s"${r.size} entries")
-//      println(r)
+      //println(r)
+
 
     })
   }

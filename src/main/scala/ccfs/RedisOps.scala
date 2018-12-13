@@ -15,11 +15,9 @@ object RedisOps {
   type Properties = SortedMap[String, Hash] // Dispenser properties keyed by selected String
 
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
-  def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] = {
-    val iter = ScanResultIterator(jedis, pattern)
+  def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] =
+    jedis.keys(pattern).asScala.toList
 
-    iter.foldLeft(List.empty[String])((acc, res) => res.getResult.asScala.toList ++ acc)
-  }
 
   def zplMap(jedis: Jedis): Properties = properties(jedis, "zpl")
 

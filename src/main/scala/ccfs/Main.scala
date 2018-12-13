@@ -24,24 +24,12 @@ object Main {
 
       println(s"# entries: ${keys.length}")
 
-      val map = sessionMap(jedis)
+      val map = zplMap(jedis)
 
-      val r = matches(map, "02345678-1234-1234-1234-123456789AB1")
-
-      println(r)
-
-      //val map = zplMap(jedis)
-
-      //println(map)
-
-      //val r = matches(map, "ZPL3500371")
-//      matches(map, "ZPL3205270"),
-//      matches(map, "ZPL320554U"),
-//      matches(map, "ZPL320555P"),
-//      matches(map, "ZPL3205089"))
+      println(map)
+//      val r = matches(map, "ZPL100493W")
 //
-      //println(r)
-
+//      println(r)
 
     })
   }

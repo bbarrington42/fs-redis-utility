@@ -14,8 +14,8 @@ package object ccfs {
   }
 
   implicit val sortedMapMonoid = new Monoid[Properties] {
-    override def zero: Properties = SortedMap.empty
+    override def zero: Properties = Properties(SortedMap.empty)
 
-    override def append(f1: Properties, f2: => Properties): Properties = f1 ++ f2
+    override def append(f1: Properties, f2: => Properties): Properties = Properties(f1.map ++ f2.map)
   }
 }

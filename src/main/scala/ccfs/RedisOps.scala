@@ -12,16 +12,19 @@ import scala.collection.immutable.SortedMap
 object RedisOps {
 
   type Hash = Map[String, String]
-  type Properties = SortedMap[String, Hash] // Dispenser properties keyed by selected String
+
+  case class Properties(map: SortedMap[String, Hash]) {
+    def matches(keyPrefix: String): Properties = RedisOps.matches(this, keyPrefix)
+  }
 
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
   def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] =
     jedis.keys(pattern).asScala.toList
 
 
-  def zplMap(jedis: Jedis): Properties = properties(jedis, "zpl")
+  def zplProps(jedis: Jedis): Properties = properties(jedis, "zpl")
 
-  def sessionMap(jedis: Jedis): Properties = properties(jedis, "sessionId")
+  def sessionProps(jedis: Jedis): Properties = properties(jedis, "sessionId")
 
   private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[Properties]): Properties = {
     val iter = ScanResultIterator(jedis, pattern)
@@ -31,8 +34,8 @@ object RedisOps {
   }
 
   // Return a subset of entries matching the serial number prefix
-  def matches(map: Properties, keyPrefix: String): Properties =
-    map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) }
+  private[ccfs] def matches(props: Properties, keyPrefix: String): Properties =
+    props.copy(map = props.map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) })
 
   // Get all hashes for the given keys using a pipeline
   private def getHashes(jedis: Jedis, hashKeys: List[String]): List[Hash] = {
@@ -47,5 +50,5 @@ object RedisOps {
       hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
 
   private[ccfs] def toMap(hashes: List[Hash], mapKey: String): Properties =
-    SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*)
+    Properties(SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*))
 }

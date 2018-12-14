@@ -24,12 +24,14 @@ object Main {
 
       println(s"# entries: ${keys.length}")
 
-      val map = zplMap(jedis)
+      val props = zplProps(jedis)
 
-      println(map)
-//      val r = matches(map, "ZPL100493W")
-//
-//      println(r)
+      println(props.matches("ZPL199137J"))
+
+      println(props.map.keys)
+      //      val r = matches(map, "ZPL100493W")
+      //
+      //      println(r)
 
     })
   }

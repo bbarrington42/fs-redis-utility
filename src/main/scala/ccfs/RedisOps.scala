@@ -1,6 +1,6 @@
 package ccfs
 
-import ccfs.Main.DISPENSER_KEY_PATTERN
+import ccfs.Main.{DISPENSER_KEY_PATTERN, DISPENSER_KEY_PREFIX}
 import ccfs.util.ScanResultIterator
 import redis.clients.jedis.Jedis
 import scalaz.Monoid
@@ -20,6 +20,14 @@ object RedisOps {
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
   def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] =
     jedis.keys(pattern).asScala.toList
+
+  def delKeys(jedis: Jedis, sessionPattern: String = DISPENSER_KEY_PATTERN): Long = {
+    val pattern =
+      if (sessionPattern != DISPENSER_KEY_PATTERN) s"$DISPENSER_KEY_PREFIX$sessionPattern" else sessionPattern
+    val keys = getKeys(jedis, pattern)
+
+    jedis.del(keys: _*)
+  }
 
 
   def zplProps(jedis: Jedis): Properties = properties(jedis, "zpl")

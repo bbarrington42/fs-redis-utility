@@ -6,7 +6,9 @@ import redis.clients.jedis._
 
 object Main {
 
-  val DISPENSER_KEY_PATTERN = "dispenser:*"
+  val DISPENSER_KEY_PREFIX = "dispenser:"
+
+  val DISPENSER_KEY_PATTERN = s"$DISPENSER_KEY_PREFIX*"
 
   val config = ConfigFactory.load().getConfig("redis")
   val poolConfig = new JedisPoolConfig
@@ -22,13 +24,21 @@ object Main {
 
       val keys = getKeys(jedis)
 
-      println(s"# entries: ${keys.length}")
+      println(s"# keys: ${keys.length}")
 
-      val props = zplProps(jedis)
+      println(keys.mkString("\n"))
 
-      println(props.matches("ZPL199137J"))
+//      val n = delKeys(jedis)
+//
+//      println(s"Deleted: $n keys")
 
-      println(props.map.keys)
+//      val props = zplProps(jedis)
+//
+//      println(props)
+
+//      println(props.matches("ZPL199137J"))
+//
+//      println(props.map.keys)
       //      val r = matches(map, "ZPL100493W")
       //
       //      println(r)

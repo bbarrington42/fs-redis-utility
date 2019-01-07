@@ -13,8 +13,8 @@ object RedisOps {
 
   type Hash = Map[String, String]
 
-  case class Properties(map: SortedMap[String, Hash]) {
-    def matches(keyPrefix: String): Properties = RedisOps.matches(this, keyPrefix)
+  case class RedisProperties(map: SortedMap[String, Hash]) {
+    def matches(keyPrefix: String): RedisProperties = RedisOps.matches(this, keyPrefix)
   }
 
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
@@ -30,11 +30,11 @@ object RedisOps {
   }
 
 
-  def zplProps(jedis: Jedis): Properties = properties(jedis, "zpl")
+  def zplProps(jedis: Jedis): RedisProperties = properties(jedis, "zpl")
 
-  def sessionProps(jedis: Jedis): Properties = properties(jedis, "sessionId")
+  def sessionProps(jedis: Jedis): RedisProperties = properties(jedis, "sessionId")
 
-  private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[Properties]): Properties = {
+  private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[RedisProperties]): RedisProperties = {
     val iter = ScanResultIterator(jedis, pattern)
 
     iter.foldLeft(monoid.zero)((acc, res) =>
@@ -42,7 +42,7 @@ object RedisOps {
   }
 
   // Return a subset of entries matching the serial number prefix
-  private[ccfs] def matches(props: Properties, keyPrefix: String): Properties =
+  private[ccfs] def matches(props: RedisProperties, keyPrefix: String): RedisProperties =
     props.copy(map = props.map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) })
 
   // Get all hashes for the given keys using a pipeline
@@ -57,6 +57,6 @@ object RedisOps {
     hashes.foldLeft(List.empty[(String, Hash)])((acc, hash) =>
       hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
 
-  private[ccfs] def toMap(hashes: List[Hash], mapKey: String): Properties =
-    Properties(SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*))
+  private[ccfs] def toMap(hashes: List[Hash], mapKey: String): RedisProperties =
+    RedisProperties(SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*))
 }

@@ -44,19 +44,19 @@ object TestRedisOps extends Properties("RedisOps") {
 
   // Obtain a ZPLMap Generator that generates entries with the given prefix with length given by the passed Generator
   // Return a tuple of those values
-  private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[Properties]) =
+  private def withPrefix(prefix: String, len: Gen[Int]): (String, Gen[RedisProperties]) =
     prefix -> len.flatMap(n => Gen.listOfN(n, hash(prefix))).map(hashes => toMap(hashes, "zpl"))
 
   // A list of the above
-  private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[Properties])] =
+  private def withPrefixes(prefixes: List[String], len: Gen[Int]): List[(String, Gen[RedisProperties])] =
     prefixes.map(p => withPrefix(p, len))
 
   // Pull the Gen out from the ZPLMap having it apply to the containing List instead
-  private def sequence(tuples: List[(String, Gen[Properties])]): Gen[List[(String, Properties)]] =
+  private def sequence(tuples: List[(String, Gen[RedisProperties])]): Gen[List[(String, RedisProperties)]] =
     Traverse[List].sequence(tuples.map { case (p, g) => g.flatMap(map => Gen.const(p -> map)) })
 
   // Finally, combine methods above to give us a Generator for testing
-  def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, Properties)]] =
+  def genTuples(prefixes: List[String], len: Gen[Int]): Gen[List[(String, RedisProperties)]] =
     sequence(withPrefixes(prefixes, len))
 
 
@@ -69,18 +69,18 @@ object TestRedisOps extends Properties("RedisOps") {
   property("hash entries should be sorted by keys") =
     Prop.forAll(hashes(20))(hashes => {
     val map = toMap(hashes, "zpl")
-    val keys = map.keySet.toList
-    keys == map.keys.toList.sorted
+    val keys = map.map.keySet.toList
+    keys == map.map.keys.toList.sorted
   })
 
   property("matches should return the correct number of results") =
     Prop.forAll(genTuples(zplPrefixes, Gen.choose(1, 30)))(tuples => {
       // Combine all the maps into one
-      val map = tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2 ++ acc)
+      val map = RedisProperties(tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2.map ++ acc))
 
       // Collect our test criteria. Namely, the prefix and how many instances should be found with each
-      val crit = tuples.map { case (p, m) => p -> m.size }
+      val crit = tuples.map { case (p, m) => p -> m.map.size }
 
-      crit.forall { case (p, n) => matches(map, p).size == n }
+      crit.forall { case (p, n) => matches(map, p).map.size == n }
     })
 }

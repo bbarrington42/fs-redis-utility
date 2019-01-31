@@ -19,7 +19,7 @@ object Main {
     config.getInt("port"))
 
   def nonEmpty(props: RedisProperties): RedisProperties =
-    RedisProperties(props.map.filter { case (_, value) => value.nonEmpty })
+    props.filter { case (_, value) => value.nonEmpty }
 
 
   def main(args: Array[String]): Unit = {
@@ -34,7 +34,7 @@ object Main {
       //println(keys.mkString("\n"))
 
       val sessProps = sessionProps(jedis)
-      val zProps = nonEmpty(zplProps(jedis)).map
+      val zProps = nonEmpty(zplProps(jedis))
       val zpls = zProps.keys.mkString("\n")
 
       println(s"${zProps.size} connected dispensers")

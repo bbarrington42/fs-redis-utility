@@ -1,4 +1,4 @@
-import ccfs.RedisOps.RedisProperties
+import ccfs.RedisOps.{Hash, RedisProperties}
 import redis.clients.jedis.{Jedis, JedisPool}
 import scalaz.Monoid
 
@@ -15,8 +15,8 @@ package object ccfs {
   }
 
   implicit val sortedMapMonoid = new Monoid[RedisProperties] {
-    override def zero: RedisProperties = RedisProperties(SortedMap.empty)
+    override def zero: RedisProperties = SortedMap.empty
 
-    override def append(f1: RedisProperties, f2: => RedisProperties): RedisProperties = RedisProperties(f1.map ++ f2.map)
+    override def append(f1: RedisProperties, f2: => RedisProperties): RedisProperties = f1 ++ f2
   }
 }

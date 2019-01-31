@@ -69,18 +69,18 @@ object TestRedisOps extends Properties("RedisOps") {
   property("hash entries should be sorted by keys") =
     Prop.forAll(hashes(20))(hashes => {
     val map = toMap(hashes, "zpl")
-    val keys = map.map.keySet.toList
-    keys == map.map.keys.toList.sorted
+    val keys = map.keySet.toList
+    keys == map.keys.toList.sorted
   })
 
   property("matches should return the correct number of results") =
     Prop.forAll(genTuples(zplPrefixes, Gen.choose(1, 30)))(tuples => {
       // Combine all the maps into one
-      val map = RedisProperties(tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2.map ++ acc))
+      val map = tuples.foldLeft(SortedMap.empty[String, Hash])((acc, tuple) => tuple._2 ++ acc)
 
       // Collect our test criteria. Namely, the prefix and how many instances should be found with each
-      val crit = tuples.map { case (p, m) => p -> m.map.size }
+      val crit = tuples.map { case (p, m) => p -> m.size }
 
-      crit.forall { case (p, n) => matches(map, p).map.size == n }
+      crit.forall { case (p, n) => matches(map, p).size == n }
     })
 }

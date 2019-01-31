@@ -12,10 +12,7 @@ import scala.collection.immutable.SortedMap
 object RedisOps {
 
   type Hash = Map[String, String]
-
-  case class RedisProperties(map: SortedMap[String, Hash]) {
-    def matches(keyPrefix: String): RedisProperties = RedisOps.matches(this, keyPrefix)
-  }
+  type RedisProperties = SortedMap[String, Hash]
 
   // Fetch all dispenser keys. Dispenser keys are the session ID prefixed by 'dispenser:'
   def getKeys(jedis: Jedis, pattern: String = DISPENSER_KEY_PATTERN): List[String] =
@@ -30,9 +27,9 @@ object RedisOps {
   }
 
 
-  def zplProps(jedis: Jedis): RedisProperties = properties(jedis, "zpl")
+  def zplProps(jedis: Jedis): SortedMap[String, Hash] = properties(jedis, "zpl")
 
-  def sessionProps(jedis: Jedis): RedisProperties = properties(jedis, "sessionId")
+  def sessionProps(jedis: Jedis): SortedMap[String, Hash] = properties(jedis, "sessionId")
 
   private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)
                               (implicit monoid: Monoid[RedisProperties]): RedisProperties = {
@@ -44,7 +41,7 @@ object RedisOps {
 
   // Return a subset of entries matching the serial number prefix
   private[ccfs] def matches(props: RedisProperties, keyPrefix: String): RedisProperties =
-    props.copy(map = props.map.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) })
+    props.dropWhile { case (k, _) => !k.startsWith(keyPrefix) }.takeWhile { case (k, _) => k.startsWith(keyPrefix) }
 
   // Get all hashes for the given keys using a pipeline
   private def getHashes(jedis: Jedis, hashKeys: List[String]): List[Hash] = {
@@ -59,5 +56,5 @@ object RedisOps {
       hash.get(key).map(k => k -> hash :: acc).getOrElse(acc))
 
   private[ccfs] def toMap(hashes: List[Hash], mapKey: String): RedisProperties =
-    RedisProperties(SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*))
+    SortedMap[String, Hash](toMapEntries(hashes, mapKey): _*)
 }

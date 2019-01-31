@@ -26,7 +26,7 @@ object RedisOps {
       if (sessionPattern != DISPENSER_KEY_PATTERN) s"$DISPENSER_KEY_PREFIX$sessionPattern" else sessionPattern
     val keys = getKeys(jedis, pattern)
 
-    jedis.del(keys: _*)
+    if (keys.nonEmpty) jedis.del(keys: _*) else 0
   }
 
 

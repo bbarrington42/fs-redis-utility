@@ -22,17 +22,19 @@ object Main {
   def main(args: Array[String]): Unit = {
     withJedis(jedisPool)(jedis => {
 
+      //println(jedis.info())
+
       val keys = getKeys(jedis)
 
       println(s"# keys: ${keys.length}")
 
-      //println(keys.mkString("\n"))
+      println(keys.mkString("\n"))
 
 
       val props = sessionProps(jedis)
-        //zplProps(jedis)
+        zplProps(jedis)
 
-      val s = "9736AEEA-26F2-9652-1C9C-EDA87AF402E5"
+      val s = "10C955BC-7AD7-3967-BE1D-FBC74C52C148"
       println(s"session: $s, ${props.matches(s)}")
 
 //      val zpl = "ZPL10011CE"

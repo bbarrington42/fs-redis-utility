@@ -34,7 +34,8 @@ object RedisOps {
 
   def sessionProps(jedis: Jedis): RedisProperties = properties(jedis, "sessionId")
 
-  private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)(implicit monoid: Monoid[RedisProperties]): RedisProperties = {
+  private[ccfs] def properties(jedis: Jedis, key: String, pattern: String = DISPENSER_KEY_PATTERN)
+                              (implicit monoid: Monoid[RedisProperties]): RedisProperties = {
     val iter = ScanResultIterator(jedis, pattern)
 
     iter.foldLeft(monoid.zero)((acc, res) =>

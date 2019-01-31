@@ -18,6 +18,9 @@ object Main {
     config.getString("host"),
     config.getInt("port"))
 
+  def nonEmpty(props: RedisProperties): RedisProperties =
+    RedisProperties(props.map.filter { case (_, value) => value.nonEmpty })
+
 
   def main(args: Array[String]): Unit = {
     withJedis(jedisPool)(jedis => {
@@ -26,35 +29,16 @@ object Main {
 
       val keys = getKeys(jedis)
 
-      println(s"# keys: ${keys.length}")
+      println(s"# total keys: ${keys.length}")
 
-      println(keys.mkString("\n"))
+      //println(keys.mkString("\n"))
 
+      val sessProps = sessionProps(jedis)
+      val zProps = nonEmpty(zplProps(jedis)).map
+      val zpls = zProps.keys.mkString("\n")
 
-      val props = sessionProps(jedis)
-        zplProps(jedis)
-
-      val s = "10C955BC-7AD7-3967-BE1D-FBC74C52C148"
-      println(s"session: $s, ${props.matches(s)}")
-
-//      val zpl = "ZPL10011CE"
-//
-//      println(s"zpl: $zpl, ${props.matches(zpl)}")
-
-//      val n = delKeys(jedis)
-//
-//      println(s"Deleted: $n keys")
-
-      //val props = zplProps(jedis)
-//
-//      println(props)
-
-      //println(props.matches("ZPL3205270"))
-//
-//      println(props.map.keys)
-      //      val r = matches(map, "ZPL100493W")
-      //
-      //      println(r)
+      println(s"${zProps.size} connected dispensers")
+      println(zpls)
 
     })
   }
